@@ -116,7 +116,7 @@ describe('download-git-repo', function () {
     it('errors when trying to download private repo', function (done) {
       download('gitlab:infinitesecond/for-my-flippy', 'test/tmp', function (err) {
         if (err) {
-          if (err.message == 'Response code 406 (Not Acceptable)')
+          if (err.message == 'Response code 404 (Not Found)')
             return done()
           else
             return done(err)
@@ -131,5 +131,43 @@ describe('download-git-repo', function () {
 
   describe('via bitbucket', function () {
     runType('bitbucket')
+  })
+
+  describe('via direct', function () {
+    it('downloads master branch', function (done) {
+      download('direct:https://gitlab.com/flipxfx/download-git-repo-fixture/repository/archive.zip', 'test/tmp', function (err) {
+        var actual = read('test/tmp', filter)
+        var expected = read('test/fixtures/gitlab/master')
+        assert.deepEqual(actual, expected)
+        done()
+      })
+    })
+
+    it('downloads a branch', function (done) {
+      download('direct:https://gitlab.com/flipxfx/download-git-repo-fixture/repository/archive.zip?ref=my-branch', 'test/tmp', function (err) {
+        var actual = read('test/tmp', filter)
+        var expected = read('test/fixtures/gitlab/my-branch')
+        assert.deepEqual(actual, expected)
+        done()
+      })
+    })
+
+    it('clones master branch', function (done) {
+      download('direct:https://gitlab.com/flipxfx/download-git-repo-fixture.git', 'test/tmp', { clone: true }, function (err) {
+        var actual = read('test/tmp', filter)
+        var expected = read('test/fixtures/gitlab/master')
+        assert.deepEqual(actual, expected)
+        done()
+      })
+    })
+
+    it('clones a branch', function (done) {
+      download('direct:https://gitlab.com/flipxfx/download-git-repo-fixture.git#my-branch', 'test/tmp', { clone: true }, function (err) {
+        var actual = read('test/tmp', filter)
+        var expected = read('test/fixtures/gitlab/my-branch')
+        assert.deepEqual(actual, expected)
+        done()
+      })
+    })
   })
 })
