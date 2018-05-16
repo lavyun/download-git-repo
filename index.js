@@ -38,7 +38,15 @@ function download (repo, dest, opts, fn) {
       }
     })
   } else {
-    downloadUrl(url, dest, { extract: true, strip: 1, mode: '666', headers: { accept: 'application/zip' } }).then(data => {
+    delete opts.clone
+    if (!opts.headers) {
+      opts.headers = {
+        accept: 'application/zip'
+      }
+    } else {
+      opts.headers.accept = 'application/zip'
+    }
+    downloadUrl(url, dest, Object.assign({ extract: true, strip: 1, mode: '666' }, opts)).then(data => {
       fn()
     }).catch(err => {
       fn(err)

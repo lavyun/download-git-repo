@@ -32,6 +32,20 @@ An optional options object parameter with download options. Options include:
 
 - `clone` - boolean default `false` - If true use `git clone` instead of an http download. While this can be a bit slower, it does allow private repositories to be used if the appropriate SSH keys are setup.
 
+If you also pass in other parameters, the parameters will be used as the [download](https://github.com/kevva/download) package options.
+
+For example,to download the local gitlab repository (usually the company's private gitlab), you need to bring `private_token`, otherwise you will get 404 error.
+
+```js
+download('flipxfx/download-git-repo-fixture', 'test/tmp', {
+  headers: {
+    'PRIVATE-TOKEN': 'your private token'
+  }
+}, function (err) {
+  console.log(err ? 'Error' : 'Success')
+})
+```
+
 #### callback
 The callback function as `function (err)`.
 
