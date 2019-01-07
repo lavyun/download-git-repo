@@ -26,7 +26,7 @@ function download (repo, dest, opts, fn) {
   var clone = opts.clone || false
 
   repo = normalize(repo)
-  var url = getUrl(repo, clone)
+  var url = repo.url || getUrl(repo, clone)
 
   if (clone) {
     gitclone(url, dest, { checkout: repo.checkout, shallow: repo.checkout === 'master' }, function (err) {
@@ -38,19 +38,20 @@ function download (repo, dest, opts, fn) {
       }
     })
   } else {
-    delete opts.clone
-    if (!opts.headers) {
-      opts.headers = {
-        accept: 'application/zip'
-      }
-    } else {
-      opts.headers.accept = 'application/zip'
-    }
-    downloadUrl(url, dest, Object.assign({ extract: true, strip: 1, mode: '666' }, opts)).then(data => {
-      fn()
-    }).catch(err => {
-      fn(err)
+    const options = Object.assign({
+      extract: true,
+      strip: 1,
+      mode: '666',
+      headers: { accept: 'application/zip' },
+      opts
     })
+    downloadUrl(url, dest, options)
+      .then(function (data) {
+        fn()
+      })
+      .catch(function (err) {
+        fn(err)
+      })
   }
 }
 
@@ -62,29 +63,43 @@ function download (repo, dest, opts, fn) {
  */
 
 function normalize (repo) {
-  var regex = /^((github|gitlab|bitbucket):)?((.+):)?([^/]+)\/([^#]+)(#(.+))?$/
+  var regex = /^(?:(direct):([^#]+)(?:#(.+))?)$/
   var match = regex.exec(repo)
-  var type = match[2] || 'github'
-  var origin = match[4] || null
-  var owner = match[5]
-  var name = match[6]
-  var checkout = match[8] || 'master'
 
-  if (origin == null) {
-    if (type === 'github')
-      origin = 'github.com'
-    else if (type === 'gitlab')
-      origin = 'gitlab.com'
-    else if (type === 'bitbucket')
-      origin = 'bitbucket.org'
-  }
+  if (match) {
+    var url = match[2]
+    var checkout = match[3] || 'master'
 
-  return {
-    type: type,
-    origin: origin,
-    owner: owner,
-    name: name,
-    checkout: checkout
+    return {
+      type: 'direct',
+      url: url,
+      checkout: checkout
+    }
+  } else {
+    regex = /^(?:(github|gitlab|bitbucket):)?(?:(.+):)?([^\/]+)\/([^#]+)(?:#(.+))?$/
+    match = regex.exec(repo)
+    var type = match[1] || 'github'
+    var origin = match[2] || null
+    var owner = match[3]
+    var name = match[4]
+    var checkout = match[5] || 'master'
+
+    if (origin == null) {
+      if (type === 'github')
+        origin = 'github.com'
+      else if (type === 'gitlab')
+        origin = 'gitlab.com'
+      else if (type === 'bitbucket')
+        origin = 'bitbucket.com'
+    }
+
+    return {
+      type: type,
+      origin: origin,
+      owner: owner,
+      name: name,
+      checkout: checkout
+    }
   }
 }
 
@@ -133,8 +148,6 @@ function getUrl (repo, clone) {
       url = origin + repo.owner + '/' + repo.name + '/repository/archive.zip?ref=' + repo.checkout
     else if (repo.type === 'bitbucket')
       url = origin + repo.owner + '/' + repo.name + '/get/' + repo.checkout + '.zip'
-    else
-      url = github(repo)
   }
 
   return url
